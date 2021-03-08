@@ -179,5 +179,10 @@ else
     {
         companies = await service.Get();
         employees = await service2.Get();
+
+        if(companies != null && companies.Count >= 1)
+        {
+            companyId = companies[0].Id;
+        }
     }
 }
