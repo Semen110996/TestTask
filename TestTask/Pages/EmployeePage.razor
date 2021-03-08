@@ -1,0 +1,120 @@
+﻿@page "/employee/{id}"
+@using TestTask.Data
+@inject NavigationManager NavigationManager
+@inject СompaniesServices service
+@inject EmployeesServices service2
+
+<p>Id: @Id</p>
+<p>Фамилия:</p>
+<input class="form-control" @bind="surname" />
+<br />
+<p>Имя:</p>
+<input class="form-control" @bind="name" />
+<br />
+<p>Отчество:</p>
+<input class="form-control" @bind="patronymic" />
+<br />
+<p>Телефон:</p>
+<input class="form-control" @bind="phone" />
+<br />
+<p>Компания:</p>
+<select class="custom-select" @bind="companyId">
+    @if (companies != null)
+    {
+        @foreach (var company in companies)
+        {
+            <option value="@company.Id">@company.Name</option>
+        }
+    }
+</select>
+
+<br />
+<br />
+
+@if (prevId != -1)
+{
+    <button class="btn btn-primary" @onclick="@(e => PrevEmployee())">Предыдущий сотрудник</button>
+}
+
+<button class="btn btn-primary" @onclick="@(e => Save())">Сохранить</button>
+<button class="btn btn-primary" @onclick="@(e => Delete())">Удалить</button>
+
+@if (nextId != -1)
+{
+    <button class="btn btn-primary" @onclick="@(e => NextEmployee())">Следующий сотрудник</button>
+}
+
+
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+    private int prevId = -1;
+    private int nextId = -1;
+
+    private string name = "";
+    private string surname = "";
+    private string patronymic = "";
+    private string phone = "";
+    private int companyId = -1;
+    private List<Company> companies;
+    private List<Employee> employees;
+
+    private void PrevEmployee()
+    {
+        NavigationManager.NavigateTo("employee/" + prevId.ToString(), true);
+    }
+
+    private void NextEmployee()
+    {
+        NavigationManager.NavigateTo("employee/" + nextId.ToString(), true);
+    }
+
+    protected async Task Save()
+    {
+        service2.Update(Int32.Parse(Id), name, surname, patronymic, phone, companyId);
+        companies = await service.Get();
+        employees = await service2.Get();
+    }
+
+    protected async Task Delete()
+    {
+        service2.Delete(Int32.Parse(Id));
+
+        if (prevId != -1)
+        {
+            NavigationManager.NavigateTo("employee/" + prevId.ToString(), true);
+        }
+        else if (nextId != -1)
+        {
+            NavigationManager.NavigateTo("employee/" + prevId.ToString(), true);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("employees", true);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await service.Get();
+        employees = await service2.Get();
+        var index = employees.FindIndex(e => e.Id == Int32.Parse(Id));
+
+        name = employees[index].Name;
+        surname = employees[index].Surname;
+        patronymic = employees[index].Patronymic;
+        phone = employees[index].Phone;
+        companyId = employees[index].CompanyId;
+
+        if (index - 1 >= 0)
+        {
+            prevId = employees[index - 1].Id;
+        }
+
+        if (index + 1 < employees.Count)
+        {
+            nextId = employees[index + 1].Id;
+        }
+    }
+}

@@ -1,0 +1,88 @@
+﻿@page "/company/{id}"
+@using TestTask.Data
+@inject NavigationManager NavigationManager
+@inject СompaniesServices service
+
+<p>Id: @Id</p>
+<p>Название компании:</p>
+<input class="form-control" @bind="name" />
+
+<br />
+<br />
+
+@if (prevId != -1)
+{
+    <button class="btn btn-primary" @onclick="@(e => PrevCompany())">Предыдущая компания</button>
+}
+
+<button class="btn btn-primary" @onclick="@(e => Save())">Сохранить</button>
+<button class="btn btn-primary" @onclick="@(e => Delete())">Удалить</button>
+
+@if (nextId != -1)
+{
+    <button class="btn btn-primary" @onclick="@(e => NextCompany())">Следующая компания</button>
+}
+
+
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+    private List<Company> companies;
+    private int prevId = -1;
+    private int nextId = -1;
+
+    private string name = "";
+
+    private void PrevCompany()
+    {
+        NavigationManager.NavigateTo("company/" + prevId.ToString(), true);
+    }
+
+    private void NextCompany()
+    {
+        NavigationManager.NavigateTo("company/" + nextId.ToString(), true);
+    }
+
+    protected async Task Save()
+    {
+        service.Update(Int32.Parse(Id), name);
+        companies = await service.Get();
+    }
+
+    protected async Task Delete()
+    {
+        service.Delete(Int32.Parse(Id));
+
+        if(prevId != -1)
+        {
+            NavigationManager.NavigateTo("company/" + prevId.ToString(), true);
+        }
+        else if(nextId != -1)
+        {
+            NavigationManager.NavigateTo("company/" + prevId.ToString(), true);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("companies", true);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await service.Get();
+        var index = companies.FindIndex(e => e.Id == Int32.Parse(Id));
+
+        name = companies[index].Name;
+
+        if (index - 1 >= 0)
+        {
+            prevId = companies[index - 1].Id;
+        }
+
+        if (index + 1 < companies.Count)
+        {
+            nextId = companies[index + 1].Id;
+        }
+    }
+}

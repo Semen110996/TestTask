@@ -1,0 +1,113 @@
+﻿@page "/companies"
+
+@using TestTask.Data
+@inject NavigationManager NavigationManager
+@inject СompaniesServices service
+
+<h1>Компании</h1>
+
+<input class="form-control" placeholder="Название компании" @bind="name" />
+<br />
+<button class="btn btn-primary" @onclick="@(e => Add())">Добавить</button>
+
+<br />
+<br />
+
+@if (companies == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Название</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var company in companies)
+            {
+                <tr>
+                    @if (updateId != company.Id)
+                    {
+                        <td>@company.Id</td>
+                        <td>@company.Name</td>
+                        <td>
+                            <button class="btn btn-primary" @onclick="@(e => Update(company.Id))">Редактировать</button>
+                            <button class="btn btn-primary" @onclick="@(e => Delete(company.Id))">Удалить</button>
+                            <button class="btn btn-primary" @onclick="@(e => OpenCompanyPage(company.Id))">Перейти на страницу компании</button>
+                        </td>
+                    }
+                    else
+                    {
+                        @if (!initialization)
+                        {
+                            updateName = company.Name;
+                            initialization = true;
+                        }
+
+                        <td>@company.Id</td>
+                        <td><input class="form-control" placeholder="Имя" @bind="updateName" /></td>
+                        <td>
+                            <button class="btn btn-primary" @onclick="@(e => Save())">Сохранить</button>
+                            <button class="btn btn-primary" @onclick="@(e => Cancel())">Отменить</button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool initialization = false;
+
+    private string name = "";
+    private List<Company> companies;
+
+    private int updateId = -1;
+    private string updateName = "";
+
+    private void OpenCompanyPage(int id)
+    {
+        NavigationManager.NavigateTo("company/" + id.ToString(), true);
+    }
+
+    private void Update(int id)
+    {
+        initialization = false;
+        updateId = id;
+    }
+
+    private void Cancel()
+    {
+        updateId = -1;
+    }
+
+    protected async Task Save()
+    {
+        service.Update(updateId, updateName);
+        companies = await service.Get();
+        updateId = -1;
+    }
+
+    protected async Task Delete(int id)
+    {
+        service.Delete(id);
+        companies = await service.Get();
+    }
+
+    protected async Task Add()
+    {
+        service.Add(name);
+        companies = await service.Get();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await service.Get();
+    }
+}

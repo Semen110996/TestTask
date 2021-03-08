@@ -1,0 +1,183 @@
+﻿@page "/employees"
+
+@using TestTask.Data
+@inject NavigationManager NavigationManager
+@inject СompaniesServices service
+@inject EmployeesServices service2
+
+<h1>Сотрудники</h1>
+
+<input class="form-control" placeholder="Фамилия" @bind="surname" />
+<br />
+<input class="form-control" placeholder="Имя" @bind="name" />
+<br />
+<input class="form-control" placeholder="Отчество" @bind="patronymic" />
+<br />
+<input class="form-control" placeholder="Телефон" @bind="phone" />
+<br />
+<select class="custom-select" @bind="companyId">
+    @if (companies != null)
+    {
+        @foreach (var company in companies)
+        {
+            <option value="@company.Id">@company.Name</option>
+        }
+    }
+</select>
+<br />
+<br />
+<button class="btn btn-primary" @onclick="@(e => Add())">Добавить</button>
+
+<br />
+<br />
+
+@if (employees == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Телефон</th>
+                <th>Компания</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var employee in employees)
+            {
+                <tr>
+                    @if (updateId != employee.Id)
+                    {
+                        <td>@employee.Id</td>
+                        <td>@employee.Surname</td>
+                        <td>@employee.Name</td>
+                        <td>@employee.Patronymic</td>
+                        <td>@employee.Phone</td>
+                        @if (companies != null)
+                        {
+                            <td>@companies.Find(e => e.Id == employee.CompanyId).Name</td>
+                        }
+                        else
+                        {
+                            <td></td>
+                        }
+                <td>
+                    <button class="btn btn-primary" @onclick="@(e => Update(employee.Id))">Редактировать</button>
+                    <button class="btn btn-primary" @onclick="@(e => Delete(employee.Id))">Удалить</button>
+                    <button class="btn btn-primary" @onclick="@(e => OpenEmployeePage(employee.Id))">Перейти на страницу сотрудника</button>
+                </td>
+                    }
+                    else
+                    {
+                        @if (!initialization)
+                        {
+                            updateSurname = employee.Surname;
+                            updateName = employee.Name;
+                            updatePatronymic = employee.Patronymic;
+                            updatePhone = employee.Phone;
+                            updateCompanyId = employee.CompanyId;
+                            initialization = true;
+                        }
+
+                        <td>@employee.Id</td>
+                        <td><input class="form-control" placeholder="Фамилия" @bind="updateSurname" /></td>
+                        <td><input class="form-control" placeholder="Имя" @bind="updateName" /></td>
+                        <td><input class="form-control" placeholder="Отчество" @bind="updatePatronymic" /></td>
+                        <td><input class="form-control" placeholder="Телефон" @bind="updatePhone" /></td>
+                        <td>
+                            <select class="custom-select" @bind="updateCompanyId">
+                                @if (companies != null)
+                                {
+                                    @foreach (var company in companies)
+                                    {
+                                        <option value="@company.Id">@company.Name</option>
+                                    }
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-primary" @onclick="@(e => Save())">Сохранить</button>
+                            <button class="btn btn-primary" @onclick="@(e => Cancel())">Отменить</button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool initialization = false;
+
+    private string name = "";
+    private string surname = "";
+    private string patronymic = "";
+    private string phone = "";
+    private int companyId = -1;
+    private List<Company> companies;
+    private List<Employee> employees;
+
+    private int updateId = -1;
+    private string updateName = "";
+    private string updateSurname = "";
+    private string updatePatronymic = "";
+    private string updatePhone = "";
+    private int updateCompanyId = -1;
+
+    private void OpenEmployeePage(int id)
+    {
+        NavigationManager.NavigateTo("employee/" + id.ToString(), true);
+    }
+
+    private void Update(int id)
+    {
+        initialization = false;
+        updateId = id;
+    }
+
+    private void Cancel()
+    {
+        updateId = -1;
+    }
+
+    protected async Task Save()
+    {
+        if (updateCompanyId != -1)
+        {
+            service2.Update(updateId, updateName, updateSurname, updatePatronymic, updatePhone, updateCompanyId);
+            companies = await service.Get();
+            employees = await service2.Get();
+            updateId = -1;
+        }
+    }
+
+    protected async Task Add()
+    {
+        if (companyId != -1)
+        {
+            service2.Add(name, surname, patronymic, phone, companyId);
+            companies = await service.Get();
+            employees = await service2.Get();
+        }
+    }
+
+    protected async Task Delete(int id)
+    {
+        service2.Delete(id);
+        companies = await service.Get();
+        employees = await service2.Get();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await service.Get();
+        employees = await service2.Get();
+    }
+}
